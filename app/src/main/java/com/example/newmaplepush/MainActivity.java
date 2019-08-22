@@ -162,7 +162,7 @@ public class MainActivity extends AppCompatActivity
             fragment.beginTransaction().replace(R.id.content_fragment_layout,new HomeFragment()).commit();
             title = "home";
         } else if (id == R.id.nav_manage) {
-            fragment.beginTransaction().replace(R.id.textView2,new manage()).commit();
+            fragment.beginTransaction().replace(R.id.manage_layout,new manage()).commit();
             title = "manage";
         }
 
