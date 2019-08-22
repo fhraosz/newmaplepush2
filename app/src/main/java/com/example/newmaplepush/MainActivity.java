@@ -1,10 +1,13 @@
 package com.example.newmaplepush;
 
 import android.content.ContentValues;
+import android.content.SharedPreferences;
 import android.os.AsyncTask;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
+import android.support.v4.app.FragmentManager;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -13,6 +16,8 @@ import android.support.v7.widget.Toolbar;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.webkit.CookieManager;
+import android.webkit.CookieSyncManager;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
@@ -26,6 +31,7 @@ public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
     private static final String TAG = "MainActivity";
+    private CookieManager cookie = CookieManager.getInstance();
 
     private WebView mWebView;
     private WebSettings mWebSettings;
@@ -33,7 +39,8 @@ public class MainActivity extends AppCompatActivity
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+
+       setContentView(R.layout.activity_main);
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -46,7 +53,9 @@ public class MainActivity extends AppCompatActivity
         toggle.syncState();
         navigationView.setNavigationItemSelectedListener(this);
 
-
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            CookieManager.getInstance();
+        }
         FirebaseInstanceId.getInstance().getInstanceId().addOnCompleteListener(new OnCompleteListener<InstanceIdResult>() {
             @Override
             public void onComplete(@NonNull Task<InstanceIdResult> task) {
@@ -57,25 +66,56 @@ public class MainActivity extends AppCompatActivity
 
                 // Get new Instance ID token
                 String token = task.getResult().getToken();
-                String url = "http://maplerank.dothome.co.kr/resigster.php";
-                //String url = "http://localhost/maplepush/resigster.php";
+                //String url = "http://maplerank.dothome.co.kr/resigster.php";
+                String url = "http://cglab.sch.ac.kr/nj/";
                 ContentValues values = new ContentValues();
                 values.put("Token", token);
                 NetworkTask networkTask = new NetworkTask(url, values);
                 networkTask.execute();
                 Log.e("토큰값", token);
+                //Log.e("확인1", CookieManager.getInstance().getCookie("http://10.0.2.2/maplepush/resigster.php"));
+                //Log.e("확인2", CookieManager.getInstance().getCookie("http://10.0.2.2/maplepush/auctionlist.php"));
+                //CookieManager.getInstance().setCookie("http://10.0.2.2/maplepush/auctionlist.php", CookieManager.getInstance().getCookie("http://10.0.2.2/maplepush/resigster.php"));
             }
         });
 
-        setContentView(R.layout.activity_main);
+
+
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+
+        //setContentView(R.layout.activity_main);
 
         mWebView = (WebView)findViewById(R.id.webview_login);
         mWebView.setWebViewClient(new WebViewClient());
         mWebSettings = mWebView.getSettings();
+        //CookieManager.getInstance().setCookie("http://10.0.2.2/maplepush/auctionlist.php", "e247be34e6b7a8cbb8247a2ceab17bb0");
         mWebSettings.setJavaScriptEnabled(true);
 
-        mWebView.loadUrl("http://maplerank.dothome.co.kr/");
+        mWebView.loadUrl("http://cglab.sch.ac.kr/nj/");
 
+    }
+
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            CookieSyncManager.getInstance().startSync();
+        }
+    }
+
+    @Override
+    protected void onPause() {
+        super.onPause();
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.LOLLIPOP) {
+            CookieSyncManager.getInstance().stopSync();
+        }
     }
 
     @Override
@@ -111,23 +151,24 @@ public class MainActivity extends AppCompatActivity
     }
 
     @SuppressWarnings("StatementWithEmptyBody")
-    @Override
+    @Override // 네이게이션 바 클릭 이벤트 관리
     public boolean onNavigationItemSelected(MenuItem item) {
-        // Handle navigation view item clicks here.
         int id = item.getItemId();
 
+        FragmentManager fragment = getSupportFragmentManager();
+        String title = getString(R.string.app_name);
+
         if (id == R.id.nav_home) {
-            // Handle the camera action
-        } else if (id == R.id.nav_gallery) {
+            fragment.beginTransaction().replace(R.id.content_fragment_layout,new HomeFragment()).commit();
+            title = "home";
+        } else if (id == R.id.nav_manage) {
+            fragment.beginTransaction().replace(R.id.textView2,new manage()).commit();
+            title = "manage";
+        }
 
-        } else if (id == R.id.nav_slideshow) {
-
-        } else if (id == R.id.nav_tools) {
-
-        } else if (id == R.id.nav_share) {
-
-        } else if (id == R.id.nav_send) {
-
+        // set the toolbar title
+        if (getSupportActionBar() != null) {
+            getSupportActionBar().setTitle(title);
         }
 
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
@@ -155,6 +196,7 @@ public class MainActivity extends AppCompatActivity
             result = requestHttpURLConnection.request(url, values); // 해당 URL로 부터 결과물을 얻어온다.
 
             Log.e("결과확인", result);
+            SharedPreferences sharedPreferences;
             return result;
         }
 
