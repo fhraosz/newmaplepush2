@@ -1,16 +1,19 @@
 package com.example.newmaplepush;
 
 import android.content.ContentValues;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.annotation.NonNull;
 import android.support.design.widget.NavigationView;
-import android.support.v4.app.FragmentManager;
+import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
+import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
@@ -31,16 +34,21 @@ public class MainActivity extends AppCompatActivity
         implements NavigationView.OnNavigationItemSelectedListener {
 
     private static final String TAG = "MainActivity";
-    private CookieManager cookie = CookieManager.getInstance();
 
     private WebView mWebView;
     private WebSettings mWebSettings;
+//    private Fragment homeFragment;
+    private Fragment manageFragment;
+    public  String token;
+
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
        setContentView(R.layout.activity_main);
+
+        manageFragment = new ManageFragment();
 
         Toolbar toolbar = findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -65,9 +73,9 @@ public class MainActivity extends AppCompatActivity
                 }
 
                 // Get new Instance ID token
-                String token = task.getResult().getToken();
+                token = task.getResult().getToken();
                 //String url = "http://maplerank.dothome.co.kr/resigster.php";
-                String url = "http://cglab.sch.ac.kr/nj/";
+                String url = "http://cglab.sch.ac.kr/nj/resigster.php";
                 ContentValues values = new ContentValues();
                 values.put("Token", token);
                 NetworkTask networkTask = new NetworkTask(url, values);
@@ -87,18 +95,14 @@ public class MainActivity extends AppCompatActivity
     protected void onStart() {
         super.onStart();
 
-        //setContentView(R.layout.activity_main);
-
         mWebView = (WebView)findViewById(R.id.webview_login);
         mWebView.setWebViewClient(new WebViewClient());
         mWebSettings = mWebView.getSettings();
-        //CookieManager.getInstance().setCookie("http://10.0.2.2/maplepush/auctionlist.php", "e247be34e6b7a8cbb8247a2ceab17bb0");
         mWebSettings.setJavaScriptEnabled(true);
 
         mWebView.loadUrl("http://cglab.sch.ac.kr/nj/");
 
     }
-
 
     @Override
     protected void onResume() {
@@ -153,23 +157,23 @@ public class MainActivity extends AppCompatActivity
     @SuppressWarnings("StatementWithEmptyBody")
     @Override // 네이게이션 바 클릭 이벤트 관리
     public boolean onNavigationItemSelected(MenuItem item) {
+        FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+        AlertDialog.Builder builder = new AlertDialog.Builder(MainActivity.this);
+
+        builder.setTitle("test");
+        builder.setTitle("테스트입니다");
+
         int id = item.getItemId();
 
-        FragmentManager fragment = getSupportFragmentManager();
-        String title = getString(R.string.app_name);
-
         if (id == R.id.nav_home) {
-            fragment.beginTransaction().replace(R.id.content_fragment_layout,new HomeFragment()).commit();
-            title = "home";
+                //transaction.replace(R.id.content_fragment_layout, homeFragment);
         } else if (id == R.id.nav_manage) {
-            fragment.beginTransaction().replace(R.id.manage_layout,new manage()).commit();
-            title = "manage";
+            Intent intent = new Intent(MainActivity.this, ManageFragmentActivity.class);
+            intent.putExtra("token", token);
+            startActivity(intent);
         }
-
-        // set the toolbar title
-        if (getSupportActionBar() != null) {
-            getSupportActionBar().setTitle(title);
-        }
+        transaction.addToBackStack(null);
+        transaction.commit();
 
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
         drawer.closeDrawer(GravityCompat.START);
@@ -193,6 +197,7 @@ public class MainActivity extends AppCompatActivity
             String result; // 요청 결과를 저장할 변수.
 
             RequestHttpURLConnection requestHttpURLConnection = new RequestHttpURLConnection();
+
             result = requestHttpURLConnection.request(url, values); // 해당 URL로 부터 결과물을 얻어온다.
 
             Log.e("결과확인", result);
